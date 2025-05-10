@@ -1,5 +1,6 @@
-import { totalCostCalculator } from './purchaseCosts.js';
-import { repairCostByYear, insuranceCostsByYear, calculateCurrentValue, calculateTotalCostsPerYear } from './variableOngoingCosts.js';
+import { purchaseCostCalculator } from './purchaseCosts.js';
+import { repairCostByYear, insuranceCostsByYear, calculateCurrentValue, calculateUpkeepCostsPerYear } from './variableOngoingCosts.js';
+import { totalLifetimeCost, amortizedAnnualCosts } from './totalCostEstimator.js';
 
 // Test purchase costs
 console.log('Total Cost Calculator Test Results:');
@@ -8,7 +9,7 @@ console.log('----------------------------------');
 const testPrices = [25000, 30000, 35000, 40000, 50000];
 
 testPrices.forEach(price => {
-    const total = totalCostCalculator(price);
+    const total = purchaseCostCalculator(price);
     console.log(`Sticker Price: $${price.toLocaleString()}`);
     console.log(`Total Cost: $${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
     console.log('----------------------------------');
@@ -90,11 +91,95 @@ totalCostScenarios.forEach(scenario => {
     console.log('----------------------------------');
     
     for (let year = 0; year < scenario.years; year++) {
-        const totalCost = calculateTotalCostsPerYear(
+        const totalCost = calculateUpkeepCostsPerYear(
             scenario.stickerPrice,
             year,
             scenario.manufacturingYear + year
         );
         console.log(`Year ${year + 1}: $${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
     }
+});
+
+// Test total lifetime cost
+console.log('\nTotal Lifetime Cost Calculator Test Results:');
+console.log('----------------------------------');
+
+const lifetimeScenarios = [
+    { 
+        stickerPrice: 35000,
+        currentYearsSinceManufacturing: 0,
+        currentMileage: 0,
+        lifetimeMileage: 150000
+    },
+    { 
+        stickerPrice: 35000,
+        currentYearsSinceManufacturing: 3,
+        currentMileage: 45000,
+        lifetimeMileage: 150000
+    },
+    { 
+        stickerPrice: 45000,
+        currentYearsSinceManufacturing: 0,
+        currentMileage: 0,
+        lifetimeMileage: 200000
+    }
+];
+
+lifetimeScenarios.forEach(scenario => {
+    console.log(`\nScenario: $${scenario.stickerPrice.toLocaleString()} car`);
+    console.log(`Current Years Since Manufacturing: ${scenario.currentYearsSinceManufacturing}`);
+    console.log(`Current Mileage: ${scenario.currentMileage.toLocaleString()} miles`);
+    console.log(`Expected Lifetime Mileage: ${scenario.lifetimeMileage.toLocaleString()} miles`);
+    console.log('----------------------------------');
+    
+    const totalCost = totalLifetimeCost(
+        scenario.stickerPrice,
+        scenario.currentYearsSinceManufacturing,
+        scenario.currentMileage,
+        scenario.lifetimeMileage
+    );
+    
+    console.log(`Total Lifetime Cost: $${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
+});
+
+// Test amortized annual costs
+console.log('\nAmortized Annual Costs Calculator Test Results:');
+console.log('----------------------------------');
+
+const amortizedScenarios = [
+    { 
+        stickerPrice: 35000,
+        currentYearsSinceManufacturing: 0,
+        currentMileage: 0,
+        lifetimeMileage: 150000
+    },
+    { 
+        stickerPrice: 35000,
+        currentYearsSinceManufacturing: 3,
+        currentMileage: 45000,
+        lifetimeMileage: 150000
+    },
+    { 
+        stickerPrice: 45000,
+        currentYearsSinceManufacturing: 0,
+        currentMileage: 0,
+        lifetimeMileage: 200000
+    }
+];
+
+amortizedScenarios.forEach(scenario => {
+    console.log(`\nScenario: $${scenario.stickerPrice.toLocaleString()} car`);
+    console.log(`Current Years Since Manufacturing: ${scenario.currentYearsSinceManufacturing}`);
+    console.log(`Current Mileage: ${scenario.currentMileage.toLocaleString()} miles`);
+    console.log(`Expected Lifetime Mileage: ${scenario.lifetimeMileage.toLocaleString()} miles`);
+    console.log('----------------------------------');
+    
+    const annualCost = amortizedAnnualCosts(
+        scenario.stickerPrice,
+        scenario.currentYearsSinceManufacturing,
+        scenario.currentMileage,
+        scenario.lifetimeMileage
+    );
+    
+    console.log(`Amortized Annual Cost: $${annualCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
 }); 
