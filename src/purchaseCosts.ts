@@ -9,7 +9,7 @@ export const expectedLoanYears = 5; // 5 year loan term
  * @param stickerPrice - The base price of the vehicle
  * @returns The total cost including sales tax and interest
  */
-export function totalCostCalculator(stickerPrice: number): number {
+export function purchaseCostCalculator(stickerPrice: number): number {
     // Calculate cost with sales tax
     const costWithTax = stickerPrice * (1 + salesTaxMA);
     

@@ -100,7 +100,7 @@ export function insuranceCostsByYear(
  * @param yearSinceManufacturing - Year since the vehicle was manufactured (0-based)
  * @returns Total costs for the year
  */
-export function calculateTotalCostsPerYear(
+export function calculateUpkeepCostsPerYear(
     stickerPrice: number,
     yearOfOwnership: number,
     yearSinceManufacturing: number
