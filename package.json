@@ -1,16 +1,26 @@
 {
   "name": "toyota-cost-calculator",
   "version": "1.0.0",
-  "main": "index.js",
-  "module": "main.js",
+  "description": "",
+  "main": "dist/main.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/main.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
   "dependencies": {
-    "esm": "^3.2.25"
+    "@types/csv-parse": "^1.1.12",
+    "@types/csv-stringify": "^1.4.3",
+    "csv-parse": "^5.6.0",
+    "csv-stringify": "^6.5.2"
   }
 }
