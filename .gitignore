@@ -17,3 +17,7 @@ build/
 *.swp
 *.swo
 .DS_Store 
+
+# Cost calculations
+cost_calculations_*.csv
+cost_calculations_*.csv.back 

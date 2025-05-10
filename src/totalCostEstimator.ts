@@ -2,6 +2,8 @@ import { purchaseCostCalculator } from './purchaseCosts.js';
 import { calculateUpkeepCostsPerYear } from './variableOngoingCosts.js';
 
 const ANNUAL_MILEAGE = 15000; // miles per year
+const LOAN_AMOUNT = 20000; // $20,000 loan amount
+const LOAN_PERIOD_MONTHS = 60; // 5 years loan period
 
 /**
  * Calculates the remaining years of vehicle ownership based on current and expected lifetime mileage
@@ -26,7 +28,8 @@ export function totalLifetimeCost(
     stickerPrice: number,
     currentYearsSinceManufacturing: number,
     currentMileage: number,
-    lifetimeMileage: number
+    lifetimeMileage: number,
+    isPlugIn: boolean
 ): number {
     // Calculate initial purchase cost
     const purchaseCost = purchaseCostCalculator(stickerPrice);
@@ -41,7 +44,8 @@ export function totalLifetimeCost(
         const yearlyCost = calculateUpkeepCostsPerYear(
             stickerPrice,
             year,
-            yearSinceManufacturing
+            yearSinceManufacturing,
+            isPlugIn
         );
         totalOngoingCosts += yearlyCost;
     }
@@ -62,7 +66,8 @@ export function amortizedAnnualCosts(
     stickerPrice: number,
     currentYearsSinceManufacturing: number,
     currentMileage: number,
-    lifetimeMileage: number
+    lifetimeMileage: number,
+    isPlugIn: boolean
 ): number {
     const remainingYears = calculateRemainingYears(currentMileage, lifetimeMileage);
     
@@ -70,8 +75,43 @@ export function amortizedAnnualCosts(
         stickerPrice,
         currentYearsSinceManufacturing,
         currentMileage,
-        lifetimeMileage
+        lifetimeMileage,
+        isPlugIn
     );
     
     return totalCost / remainingYears;
+}
+
+/**
+ * Calculates the monthly cost of owning a vehicle, including loan payments and upkeep costs
+ * @param stickerPrice - The original sticker price of the vehicle
+ * @param yearsOfOwnership - Number of years the vehicle has been owned
+ * @param yearsSinceManufacturing - Number of years since the vehicle was manufactured
+ * @returns The total monthly cost including loan payments and upkeep costs
+ */
+export function monthlyCostCalculator(
+    stickerPrice: number,
+    yearsOfOwnership: number,
+    yearsSinceManufacturing: number,
+    isPlugIn: boolean
+): number {
+    // Calculate loan payment amount
+    let loanPaymentAmount = 0;
+    if (yearsOfOwnership < 5) {
+        const totalPurchasePrice = purchaseCostCalculator(stickerPrice);
+        const loanAmount = totalPurchasePrice - LOAN_AMOUNT;
+        loanPaymentAmount = loanAmount / LOAN_PERIOD_MONTHS;
+    }
+
+    // Calculate monthly upkeep costs
+    const yearlyUpkeepCost = calculateUpkeepCostsPerYear(
+        stickerPrice,
+        yearsOfOwnership,
+        yearsSinceManufacturing,
+        isPlugIn
+    );
+    const monthlyUpkeepCost = yearlyUpkeepCost / 12;
+
+    // Return total monthly cost
+    return loanPaymentAmount + monthlyUpkeepCost;
 }

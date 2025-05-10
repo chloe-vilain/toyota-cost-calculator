@@ -6,6 +6,17 @@ const MILEAGE_DEPRECIATION_RATE = 0.000003; // 0.0003% per mile
 const EXPECTED_ANNUAL_MILEAGE = 15000; // Default annual mileage
 // const BASE_INSURANCE_COST = 1900; // Not used in new formula
 
+// Constants for fuel calculations
+const ANNUAL_MILEAGE = 15000; // miles per year
+const HYBRID_MPG = 40; // miles per gallon for hybrid
+const PLUGIN_MPG = 40; // miles per gallon for plugin when using gas
+const PLUGIN_ELECTRIC_RANGE = 42; // miles per kWh for plugin when using electric
+const BATTERY_KWH = 18.1; // kWh capacity for RAV4 Prime
+const ELECTRIC_RANGE = 42; // miles per full charge for RAV4 Prime
+const DEFAULT_GAS_PRICE = 3.50; // default gas price per gallon
+const DEFAULT_ELECTRIC_PRICE = 0.15; // default electric price per kWh
+const DEFAULT_ELECTRIC_PERCENTAGE = 0.5; // default percentage of electric driving
+
 /**
  * Calculates the repair cost for a given year of the vehicle's life.
  * Based on actual Toyota RAV4 maintenance cost data from CarEdge.com
@@ -94,16 +105,60 @@ export function insuranceCostsByYear(
 }
 
 /**
- * Calculates the total costs (repair + insurance) for a given year of ownership
+ * Calculates annual fuel costs for a vehicle
+ * @param isPlugIn - Whether the vehicle is a plug-in hybrid
+ * @param gasPricePerGallon - Current price of gas per gallon (default: $3.50)
+ * @param electricPricePerKwh - Current price of electricity per kWh (default: $0.15)
+ * @param percentageElectricDriven - Percentage of miles driven on electric (default: 0.5)
+ * @returns Annual fuel cost in dollars
+ */
+export function annualFuelCosts(
+    isPlugIn: boolean,
+    gasPricePerGallon: number = DEFAULT_GAS_PRICE,
+    electricPricePerKwh: number = DEFAULT_ELECTRIC_PRICE,
+    percentageElectricDriven: number = DEFAULT_ELECTRIC_PERCENTAGE
+): number {
+    if (!isPlugIn) {
+        // For regular hybrid, calculate gas cost only
+        const gallonsUsed = ANNUAL_MILEAGE / HYBRID_MPG;
+        return gallonsUsed * gasPricePerGallon;
+    } else {
+        // For plug-in hybrid, calculate both electric and gas costs
+        const electricMiles = ANNUAL_MILEAGE * percentageElectricDriven;
+        const gasMiles = ANNUAL_MILEAGE - electricMiles;
+
+        // Calculate electric cost based on battery size and range
+        const chargesPerYear = electricMiles / ELECTRIC_RANGE;
+        const costPerCharge = BATTERY_KWH * electricPricePerKwh;
+        const electricCost = chargesPerYear * costPerCharge;
+
+        // Calculate gas cost
+        const gallonsUsed = gasMiles / PLUGIN_MPG;
+        const gasCost = gallonsUsed * gasPricePerGallon;
+
+        return electricCost + gasCost;
+    }
+}
+
+/**
+ * Calculates the total costs (repair + insurance + fuel) for a given year of ownership
  * @param stickerPrice - Original price of the vehicle
  * @param yearOfOwnership - Year of ownership (0-based)
  * @param yearSinceManufacturing - Year since the vehicle was manufactured (0-based)
+ * @param isPlugIn - Whether the vehicle is a plug-in hybrid
+ * @param gasPricePerGallon - Current price of gas per gallon (default: $3.50)
+ * @param electricPricePerKwh - Current price of electricity per kWh (default: $0.15)
+ * @param percentageElectricDriven - Percentage of miles driven on electric (default: 0.5)
  * @returns Total costs for the year
  */
 export function calculateUpkeepCostsPerYear(
     stickerPrice: number,
     yearOfOwnership: number,
-    yearSinceManufacturing: number
+    yearSinceManufacturing: number,
+    isPlugIn: boolean,
+    gasPricePerGallon: number = DEFAULT_GAS_PRICE,
+    electricPricePerKwh: number = DEFAULT_ELECTRIC_PRICE,
+    percentageElectricDriven: number = DEFAULT_ELECTRIC_PERCENTAGE
 ): number {
     // Calculate repair costs based on vehicle age
     const repairCost = repairCostByYear(yearSinceManufacturing);
@@ -111,6 +166,14 @@ export function calculateUpkeepCostsPerYear(
     // Calculate insurance costs based on ownership duration
     const insuranceCost = insuranceCostsByYear(stickerPrice, yearOfOwnership);
     
+    // Calculate fuel costs
+    const fuelCost = annualFuelCosts(
+        isPlugIn,
+        gasPricePerGallon,
+        electricPricePerKwh,
+        percentageElectricDriven
+    );
+    
     // Return total costs
-    return repairCost + insuranceCost;
+    return repairCost + insuranceCost + fuelCost;
 } 

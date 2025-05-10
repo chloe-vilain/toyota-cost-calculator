@@ -1,6 +1,14 @@
 import { purchaseCostCalculator } from './purchaseCosts.js';
-import { repairCostByYear, insuranceCostsByYear, calculateCurrentValue, calculateUpkeepCostsPerYear } from './variableOngoingCosts.js';
-import { totalLifetimeCost, amortizedAnnualCosts } from './totalCostEstimator.js';
+import { repairCostByYear, insuranceCostsByYear, calculateCurrentValue, calculateUpkeepCostsPerYear, annualFuelCosts } from './variableOngoingCosts.js';
+import { totalLifetimeCost, amortizedAnnualCosts, monthlyCostCalculator } from './totalCostEstimator.js';
+
+interface FuelScenario {
+    label: string;
+    isPlugIn: boolean;
+    gasPricePerGallon: number;
+    electricPricePerKwh: number;
+    percentageElectricDriven?: number;
+}
 
 // Test purchase costs
 console.log('Total Cost Calculator Test Results:');
@@ -76,27 +84,42 @@ valueScenarios.forEach(scenario => {
 });
 
 // Test total costs per year
-console.log('\nTotal Costs Per Year Calculator Test Results:');
-console.log('----------------------------------');
+console.log("\nTotal Costs Per Year Calculator Test Results:");
+console.log("----------------------------------");
 
-// Test different scenarios for total costs
-const totalCostScenarios = [
-    { stickerPrice: 35000, years: 5, manufacturingYear: 0 }, // New car 35k
-    { stickerPrice: 35000, years: 5, manufacturingYear: 3 }, // 3-year-old car
-    { stickerPrice: 45000, years: 5, manufacturingYear: 0 }  // New expensive car
+const testScenarios = [
+    {
+        label: "$35,000 car, 0 years since manufacturing",
+        stickerPrice: 35000,
+        yearSinceManufacturing: 0,
+        isPlugIn: true
+    },
+    {
+        label: "$35,000 car, 3 years since manufacturing",
+        stickerPrice: 35000,
+        yearSinceManufacturing: 3,
+        isPlugIn: true
+    },
+    {
+        label: "$45,000 car, 0 years since manufacturing",
+        stickerPrice: 45000,
+        yearSinceManufacturing: 0,
+        isPlugIn: true
+    }
 ];
 
-totalCostScenarios.forEach(scenario => {
-    console.log(`\nScenario: $${scenario.stickerPrice.toLocaleString()} car, ${scenario.manufacturingYear} years since manufacturing`);
-    console.log('----------------------------------');
+testScenarios.forEach(scenario => {
+    console.log(`\nScenario: ${scenario.label}`);
+    console.log("----------------------------------");
     
-    for (let year = 0; year < scenario.years; year++) {
+    for (let year = 0; year < 5; year++) {
         const totalCost = calculateUpkeepCostsPerYear(
             scenario.stickerPrice,
             year,
-            scenario.manufacturingYear + year
+            scenario.yearSinceManufacturing + year,
+            scenario.isPlugIn
         );
-        console.log(`Year ${year + 1}: $${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
+        console.log(`Year ${year + 1}: $${totalCost.toFixed(2)}`);
     }
 });
 
@@ -109,19 +132,22 @@ const lifetimeScenarios = [
         stickerPrice: 35000,
         currentYearsSinceManufacturing: 0,
         currentMileage: 0,
-        lifetimeMileage: 150000
+        lifetimeMileage: 150000,
+        isPlugIn: true
     },
     { 
         stickerPrice: 35000,
         currentYearsSinceManufacturing: 3,
         currentMileage: 45000,
-        lifetimeMileage: 150000
+        lifetimeMileage: 150000,
+        isPlugIn: true
     },
     { 
         stickerPrice: 45000,
         currentYearsSinceManufacturing: 0,
         currentMileage: 0,
-        lifetimeMileage: 200000
+        lifetimeMileage: 200000,
+        isPlugIn: true
     }
 ];
 
@@ -136,7 +162,8 @@ lifetimeScenarios.forEach(scenario => {
         scenario.stickerPrice,
         scenario.currentYearsSinceManufacturing,
         scenario.currentMileage,
-        scenario.lifetimeMileage
+        scenario.lifetimeMileage,
+        scenario.isPlugIn
     );
     
     console.log(`Total Lifetime Cost: $${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
@@ -151,19 +178,22 @@ const amortizedScenarios = [
         stickerPrice: 35000,
         currentYearsSinceManufacturing: 0,
         currentMileage: 0,
-        lifetimeMileage: 150000
+        lifetimeMileage: 150000,
+        isPlugIn: true
     },
     { 
         stickerPrice: 35000,
         currentYearsSinceManufacturing: 3,
         currentMileage: 45000,
-        lifetimeMileage: 150000
+        lifetimeMileage: 150000,
+        isPlugIn: true
     },
     { 
         stickerPrice: 45000,
         currentYearsSinceManufacturing: 0,
         currentMileage: 0,
-        lifetimeMileage: 200000
+        lifetimeMileage: 200000,
+        isPlugIn: true
     }
 ];
 
@@ -178,8 +208,115 @@ amortizedScenarios.forEach(scenario => {
         scenario.stickerPrice,
         scenario.currentYearsSinceManufacturing,
         scenario.currentMileage,
-        scenario.lifetimeMileage
+        scenario.lifetimeMileage,
+        scenario.isPlugIn
     );
     
     console.log(`Amortized Annual Cost: $${annualCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
+});
+
+// Test monthly costs
+console.log('\nMonthly Cost Calculator Test Results:');
+console.log('----------------------------------');
+
+const monthlyScenarios = [
+    { 
+        stickerPrice: 35000,
+        yearsOfOwnership: 0,
+        yearsSinceManufacturing: 0,
+        isPlugIn: true
+    },
+    { 
+        stickerPrice: 35000,
+        yearsOfOwnership: 3,
+        yearsSinceManufacturing: 3,
+        isPlugIn: true
+    },
+    { 
+        stickerPrice: 35000,
+        yearsOfOwnership: 6,
+        yearsSinceManufacturing: 6,
+        isPlugIn: true
+    },
+    { 
+        stickerPrice: 45000,
+        yearsOfOwnership: 0,
+        yearsSinceManufacturing: 0,
+        isPlugIn: true
+    },
+    { 
+        stickerPrice: 35000,
+        yearsOfOwnership: 2,
+        yearsSinceManufacturing: 4,  // Car was manufactured 2 years before purchase
+        isPlugIn: true
+    }
+];
+
+monthlyScenarios.forEach(scenario => {
+    console.log(`\nScenario: $${scenario.stickerPrice.toLocaleString()} car`);
+    console.log(`Years of Ownership: ${scenario.yearsOfOwnership}`);
+    console.log(`Years Since Manufacturing: ${scenario.yearsSinceManufacturing}`);
+    console.log('----------------------------------');
+    
+    const monthlyCost = monthlyCostCalculator(
+        scenario.stickerPrice,
+        scenario.yearsOfOwnership,
+        scenario.yearsSinceManufacturing,
+        scenario.isPlugIn   
+    );
+    
+    console.log(`Monthly Cost: $${monthlyCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
+});
+
+// Test fuel costs
+console.log('\nAnnual Fuel Costs Calculator Test Results:');
+console.log('----------------------------------');
+
+const fuelScenarios: FuelScenario[] = [
+    {
+        label: 'Regular Hybrid',
+        isPlugIn: false,
+        gasPricePerGallon: 3.50,
+        electricPricePerKwh: 0.15
+    },
+    {
+        label: 'Plug-in Hybrid (50% electric)',
+        isPlugIn: true,
+        gasPricePerGallon: 3.50,
+        electricPricePerKwh: 0.15,
+        percentageElectricDriven: 0.5
+    },
+    {
+        label: 'Plug-in Hybrid (75% electric)',
+        isPlugIn: true,
+        gasPricePerGallon: 3.50,
+        electricPricePerKwh: 0.15,
+        percentageElectricDriven: 0.75
+    },
+    {
+        label: 'Plug-in Hybrid (25% electric)',
+        isPlugIn: true,
+        gasPricePerGallon: 3.50,
+        electricPricePerKwh: 0.15,
+        percentageElectricDriven: 0.25
+    }
+];
+
+fuelScenarios.forEach(scenario => {
+    console.log(`\nScenario: ${scenario.label}`);
+    console.log(`Gas Price: $${scenario.gasPricePerGallon}/gallon`);
+    console.log(`Electric Price: $${scenario.electricPricePerKwh}/kWh`);
+    if (scenario.isPlugIn && scenario.percentageElectricDriven !== undefined) {
+        console.log(`Percentage Electric Driven: ${scenario.percentageElectricDriven * 100}%`);
+    }
+    console.log('----------------------------------');
+    
+    const annualCost = annualFuelCosts(
+        scenario.isPlugIn,
+        scenario.gasPricePerGallon,
+        scenario.electricPricePerKwh,
+        scenario.percentageElectricDriven
+    );
+    
+    console.log(`Annual Fuel Cost: $${annualCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
 }); 
